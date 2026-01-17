@@ -161,12 +161,8 @@ function randomItem(arr) {
  * 📥 CHARGEMENT MÉMOIRE
  *********************************/
 async function loadMemory() {
-  try {
-    const res = await fetch(API_URL);
-    memory = await res.json();
-  } catch (e) {
-    console.error("Erreur mémoire", e);
-  }
+  const res = await fetch(API_URL);
+  memory = await res.json();
 }
 loadMemory();
 
@@ -177,33 +173,85 @@ async function nexaAI(message) {
   const raw = message;
   const msg = cleanText(message);
 
-  // 🔹 APPRENDRE
+  /* =======================
+     🧠 /learn (nouvelle entrée)
+  ======================= */
   if (raw.startsWith("/learn ")) {
-    const content = raw.replace("/learn ", "");
-    const parts = content.split("|");
-
-    if (parts.length !== 2) {
+    const [qPart, aPart] = raw.replace("/learn ", "").split("|");
+    if (!qPart || !aPart) {
       return "❌ Format : /learn question1, question2 | réponse1, réponse2";
     }
 
-    const questions = parts[0].split(",").map(q => cleanText(q)).filter(Boolean);
-    const answers = parts[1].split(",").map(a => a.trim()).filter(Boolean);
-
-    if (!questions.length || !answers.length) {
-      return "❌ Question ou réponse invalide.";
-    }
+    const q = qPart.split(",").map(cleanText).filter(Boolean);
+    const a = aPart.split(",").map(t => t.trim()).filter(Boolean);
 
     await fetch(API_URL + "/learn", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: questions, a: answers })
+      body: JSON.stringify({ q, a })
     });
 
     await loadMemory();
     return "🧠 J’ai appris quelque chose de nouveau !";
   }
 
-  // 🔍 RECHERCHE
+  /* =======================
+     ➕ /addanswer
+  ======================= */
+  if (raw.startsWith("/addanswer ")) {
+    const [qPart, aPart] = raw.replace("/addanswer ", "").split("|");
+    if (!qPart || !aPart) {
+      return "❌ Format : /addanswer question | réponse1, réponse2";
+    }
+
+    const target = cleanText(qPart);
+    const answers = aPart.split(",").map(t => t.trim()).filter(Boolean);
+
+    const item = memory.find(m => m.q.some(q => cleanText(q) === target));
+    if (!item) return "❌ Question introuvable.";
+
+    item.a.push(...answers);
+
+    await fetch(API_URL + "/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item)
+    });
+
+    await loadMemory();
+    return "✅ Réponses ajoutées avec succès.";
+  }
+
+  /* =======================
+     ➕ /addquestion
+  ======================= */
+  if (raw.startsWith("/addquestion ")) {
+    const [qPart, newQPart] = raw.replace("/addquestion ", "").split("|");
+    if (!qPart || !newQPart) {
+      return "❌ Format : /addquestion question existante | nouvelle question1, nouvelle question2";
+    }
+
+    const target = cleanText(qPart);
+    const newQuestions = newQPart.split(",").map(cleanText).filter(Boolean);
+
+    const item = memory.find(m => m.q.some(q => cleanText(q) === target));
+    if (!item) return "❌ Question introuvable.";
+
+    item.q.push(...newQuestions);
+
+    await fetch(API_URL + "/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item)
+    });
+
+    await loadMemory();
+    return "✅ Questions ajoutées avec succès.";
+  }
+
+  /* =======================
+     🔍 RECHERCHE
+  ======================= */
   for (let item of memory) {
     for (let key of item.q) {
       if (msg.includes(cleanText(key))) {
@@ -212,7 +260,6 @@ async function nexaAI(message) {
     }
   }
 
-  // 🤔 PAR DÉFAUT
   return randomItem([
     "🤔 Intéressant...",
     "Je ne suis pas sûr de comprendre.",
@@ -250,5 +297,7 @@ document.getElementById("userInput").addEventListener("keydown", e => {
 });
 </script>
 
+
 </body>
 </html>
+
