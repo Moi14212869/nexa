@@ -1,210 +1,220 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>IA avec apprentissage sécurisé</title>
-
-  <!-- brain.js -->
-  <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.23/dist/brain-browser.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXA — IA JavaScript</title>
 
   <style>
-    body {
-      background: #0f0f0f;
-      color: white;
-      font-family: Arial;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
     }
-    .chat {
-      width: 500px;
-      margin: 30px auto;
-      background: #1c1c1c;
-      padding: 15px;
-      border-radius: 10px;
-      position: relative;
-    }
-    #box {
-      height: 300px;
-      overflow-y: auto;
-      border: 1px solid #333;
-      padding: 10px;
-      margin-bottom: 10px;
-    }
-    .user { color: #4aa3ff; text-align: right; }
-    .bot { color: #7CFC98; text-align: left; }
 
-    input {
-      width: 75%;
-      padding: 6px;
+    body {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
     }
-    button {
-      padding: 6px 10px;
-      background: #4aa3ff;
+
+    .app {
+      background: #111;
+      width: 100%;
+      max-width: 900px;
+      height: 90vh;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 16px 24px;
+      background: #1f2933;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 1.2rem;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: #4ade80;
+    }
+
+    .chat {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      background: #0b1220;
+    }
+
+    .message {
+      margin-bottom: 16px;
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #2563eb;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .ai {
+      background: #1f2937;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 16px;
+      background: #020617;
+      gap: 12px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
       border: none;
-      color: white;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    .input-area button {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #22c55e;
+      color: #000;
+      font-weight: bold;
       cursor: pointer;
     }
 
-    /* MODAL */
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 10px;
-      width: 300px;
-      text-align: center;
+    .input-area button:hover {
+      background: #16a34a;
     }
   </style>
 </head>
 <body>
 
-<div class="chat">
-  <h2>🧠 IA avec apprentissage protégé</h2>
+<div class="app">
+  <div class="header">
+    <h1>🤖 NEXA — IA JavaScript</h1>
+    <span class="status">● En ligne</span>
+  </div>
 
-  <button onclick="ouvrirLogin()">🔐 Connexion admin</button>
+  <div class="chat" id="chat">
+    <div class="message ai">
+      Bonjour 👋 Je suis <strong>NEXA</strong>.  
+      Tu peux me parler ou m’apprendre avec :  
+      <br><code>/learn question | réponse</code>
+    </div>
+  </div>
 
-  <div id="box"></div>
-
-  <input id="input" placeholder="Parle à l'IA..."
-         onkeydown="if(event.key==='Enter') envoyer()">
-  <button onclick="envoyer()">Envoyer</button>
-</div>
-
-<!-- MODAL LOGIN -->
-<div id="loginModal" class="modal">
-  <div class="modal-content">
-    <h3>Connexion admin</h3>
-    <input id="passwordInput" type="password" placeholder="Mot de passe">
-    <br><br>
-    <button onclick="verifierLogin()">Connexion</button>
-    <button onclick="fermerLogin()">Annuler</button>
-    <p id="loginMsg"></p>
+  <div class="input-area">
+    <input id="userInput" type="text" placeholder="Parle à NEXA..." />
+    <button onclick="sendMessage()">Envoyer</button>
   </div>
 </div>
 
 <script>
-/********************
- * ✅ SÉCURITÉ CHARGEMENT
- ********************/
-if (typeof brain === "undefined") {
-  alert("Erreur : brain.js non chargé");
-}
+/**********************
+ * 🧠 MÉMOIRE IA
+ **********************/
+let memory = JSON.parse(localStorage.getItem("nexa_memory")) || [
+  { q: ["bonjour", "salut"], a: "Salut 👋" },
+  { q: ["qui es-tu", "c'est quoi nexa"], a: "Je suis NEXA, une IA en JavaScript 🧠" },
+  { q: ["comment tu marches"], a: "Je fonctionne avec des règles et de la mémoire locale." }
+];
 
-/********************
- * 🧠 RÉSEAU
- ********************/
-const net = new brain.NeuralNetwork({ hiddenLayers: [10, 10] });
+/**********************
+ * 🔍 LOGIQUE IA
+ **********************/
+function nexaAI(message) {
+  const msg = message.toLowerCase();
 
-/********************
- * 📚 DONNÉES
- ********************/
-let intents = JSON.parse(localStorage.getItem("intents")) || {
-  salutation: ["bonjour", "salut"],
-  question: ["comment ça marche"],
-  emotion: ["je suis content", "je suis triste"]
-};
-
-/********************
- * 🔢 VECTEUR
- ********************/
-function vectoriser(txt) {
-  let v = {};
-  txt.toLowerCase().split(/\W+/).forEach(m => {
-    if (m) v[m] = (v[m] || 0) + 1;
-  });
-  return v;
-}
-
-/********************
- * 🎓 ENTRAÎNEMENT
- ********************/
-function entrainer() {
-  let data = [];
-  for (let i in intents) {
-    intents[i].forEach(p => {
-      data.push({ input: vectoriser(p), output: { [i]: 1 } });
-    });
-  }
-  net.train(data, { iterations: 2000, errorThresh: 0.005 });
-}
-
-entrainer(); // ✅ APPEL APRÈS net
-
-/********************
- * 🔐 ADMIN
- ********************/
-let adminMode = false;
-
-/********************
- * 🤖 IA
- ********************/
-function IA(message) {
-
-  if (message.startsWith("/learn ") && !adminMode) {
-    return "⛔ Mode admin requis";
-  }
-
-  if (adminMode && message.startsWith("/learn ")) {
+  // Apprentissage
+  if (msg.startsWith("/learn ")) {
     const parts = message.replace("/learn ", "").split("|");
-    if (parts.length !== 2) return "Format : /learn intention | phrase";
+    if (parts.length !== 2) {
+      return "❌ Format : /learn question | réponse";
+    }
 
-    const intent = parts[0].trim();
-    const phrase = parts[1].trim();
+    const q = parts[0].trim().toLowerCase();
+    const a = parts[1].trim();
 
-    intents[intent] = intents[intent] || [];
-    intents[intent].push(phrase);
+    memory.push({ q: [q], a });
+    localStorage.setItem("nexa_memory", JSON.stringify(memory));
 
-    localStorage.setItem("intents", JSON.stringify(intents));
-    entrainer();
-
-    return `🧠 Appris : ${phrase}`;
+    return "🧠 J'ai appris quelque chose de nouveau.";
   }
 
-  const r = net.run(vectoriser(message));
-
-  if (!r || Object.keys(r).length === 0) {
-    return "🤔 Je ne comprends pas encore.";
+  // Recherche dans la mémoire
+  for (let item of memory) {
+    for (let key of item.q) {
+      if (msg.includes(key)) {
+        return item.a;
+      }
+    }
   }
 
-  const intent = Object.keys(r).reduce((a,b) => r[a] > r[b] ? a : b);
+  // Réponses génériques
+  const fallback = [
+    "🤔 Intéressant...",
+    "Je ne suis pas sûr de comprendre.",
+    "Peux-tu reformuler ?",
+    "Je n’ai pas encore appris ça."
+  ];
 
-  if (intent === "salutation") return "Salut 👋";
-  if (intent === "question") return "Bonne question 🤔";
-  if (intent === "emotion") return "Je ressens une émotion 💙";
-
-  return "Intention reconnue, réponse manquante.";
+  return fallback[Math.floor(Math.random() * fallback.length)];
 }
 
-/********************
+/**********************
  * 💬 UI
- ********************/
-function envoyer() {
-  const input = document.getElementById("input");
-  const msg = input.value.trim();
-  if (!msg) return;
+ **********************/
+function addMessage(text, sender) {
+  const chat = document.getElementById("chat");
+  const msg = document.createElement("div");
+  msg.className = `message ${sender}`;
+  msg.innerHTML = text;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
 
-  afficher(msg, "user");
+function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
   input.value = "";
 
-  setTimeout(() => afficher(IA(msg), "bot"), 300);
+  setTimeout(() => {
+    const response = nexaAI(text);
+    addMessage(response, "ai");
+  }, 400);
 }
 
-function afficher(txt, cls) {
-  const box = document.getElementById("box");
-  const div = document.createElement("div");
-  div.className = cls;
-  div.textContent = txt;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
+// Entrée avec ENTER
+document.getElementById("userInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage();
+});
 </script>
-
 
 </body>
 </html>
