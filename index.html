@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEXA</title>
+  <link rel="icon" href="nexa.ico" type="image/x-icon">
+  <title>NEXA — IA JavaScript</title>
 
   <style>
     * {
@@ -114,15 +115,15 @@
 
 <div class="app">
   <div class="header">
-    <h1>🤖 NEXA</h1>
+    <h1>🤖 NEXA — IA JavaScript</h1>
     <span class="status">● En ligne</span>
   </div>
 
   <div class="chat" id="chat">
     <div class="message ai">
-      Bonjour 👋 Je suis <strong>NEXA</strong>.  
-      Tu peux me parler ou m’apprendre avec :  
-      <br><code>/learn question | réponse</code>
+      Bonjour 👋 Je suis <strong>NEXA</strong>.<br>
+      Tu peux me parler ou m’apprendre avec :<br>
+      <code>/learn question1, question2 | réponse1, réponse2</code>
     </div>
   </div>
 
@@ -132,11 +133,122 @@
   </div>
 </div>
 
-<script src="main.js"></script>
+<script>
+/*********************************
+ * 🌐 CONFIG
+ *********************************/
+const API_URL = "https://nexa-79z3.onrender.com/memory";
+let memory = [];
 
+/*********************************
+ * 🧼 NETTOYAGE TEXTE
+ *********************************/
+function cleanText(text) {
+  return text
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’'`]/g, " ")
+    .replace(/[.,!?;:()"]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/*********************************
+ * 📥 CHARGEMENT MÉMOIRE
+ *********************************/
+async function loadMemory() {
+  try {
+    const res = await fetch(API_URL);
+    memory = await res.json();
+  } catch (e) {
+    console.error("Erreur mémoire", e);
+  }
+}
+loadMemory();
+
+/*********************************
+ * 🧠 IA
+ *********************************/
+async function nexaAI(message) {
+  const raw = message;
+  const msg = cleanText(message);
+
+  // 🔹 APPRENDRE
+  if (raw.startsWith("/learn ")) {
+    const content = raw.replace("/learn ", "");
+    const parts = content.split("|");
+
+    if (parts.length !== 2) {
+      return "❌ Format : /learn question1, question2 | réponse1, réponse2";
+    }
+
+    const questions = parts[0].split(",").map(q => cleanText(q)).filter(Boolean);
+    const answers = parts[1].split(",").map(a => a.trim()).filter(Boolean);
+
+    if (!questions.length || !answers.length) {
+      return "❌ Question ou réponse invalide.";
+    }
+
+    await fetch(API_URL + "/learn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: questions, a: answers })
+    });
+
+    await loadMemory();
+    return "🧠 J’ai appris quelque chose de nouveau !";
+  }
+
+  // 🔍 RECHERCHE
+  for (let item of memory) {
+    for (let key of item.q) {
+      if (msg.includes(cleanText(key))) {
+        return randomItem(item.a);
+      }
+    }
+  }
+
+  // 🤔 PAR DÉFAUT
+  return randomItem([
+    "🤔 Intéressant...",
+    "Je ne suis pas sûr de comprendre.",
+    "Peux-tu reformuler ?",
+    "Je n’ai pas encore appris ça."
+  ]);
+}
+
+/*********************************
+ * 💬 UI
+ *********************************/
+function addMessage(text, sender) {
+  const chat = document.getElementById("chat");
+  const msg = document.createElement("div");
+  msg.className = `message ${sender}`;
+  msg.innerHTML = text;
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, "user");
+  input.value = "";
+
+  const response = await nexaAI(text);
+  addMessage(response, "ai");
+}
+
+document.getElementById("userInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage();
+});
+</script>
 
 </body>
 </html>
-
-
-
