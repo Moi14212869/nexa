@@ -1,83 +1,107 @@
-const API_URL = "https://nexa-79z3.onrender.com"; // ton backend
+/*********************************
+ * 🌐 CONFIG
+ *********************************/
+const API_URL = "https://nexa-79z3.onrender.com/memory";
 
 let memory = [];
 
-/**********************
- * 🧽 Nettoyage texte utilisateur
- **********************/
+/*********************************
+ * 🔧 NETTOYAGE TEXTE (MAJ + PONCT + APOSTROPHES)
+ *********************************/
 function cleanText(text) {
   return text
     .toLowerCase()
-    .replace(/[.,!?;:()"'`]/g, "") // ❌ ponctuation
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’'`]/g, " ")        // apostrophes → espace
+    .replace(/[.,!?;:()"]/g, "")   // ponctuation ignorée
     .replace(/\s+/g, " ")          // espaces multiples
     .trim();
 }
 
-/**********************
- * 🌐 Charger mémoire
- **********************/
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/*********************************
+ * 📥 CHARGER LA MÉMOIRE
+ *********************************/
 async function loadMemory() {
-  const res = await fetch(`${API_URL}/memory`);
-  memory = await res.json();
+  try {
+    const res = await fetch(API_URL);
+    memory = await res.json();
+    console.log("Mémoire chargée :", memory);
+  } catch (err) {
+    console.error("Erreur chargement mémoire", err);
+  }
 }
 loadMemory();
 
-/**********************
- * 🧠 LOGIQUE IA
- **********************/
+/*********************************
+ * 🧠 IA NEXA
+ *********************************/
 async function nexaAI(message) {
-  const rawMsg = message;
-  const msg = cleanText(message); // 🔥 nettoyé
+  const raw = message;
+  const msg = cleanText(message);
 
-  // 📘 Apprentissage
-  if (msg.startsWith("/learn ")) {
-    const content = rawMsg.substring(7);
+  // 🧠 APPRENTISSAGE
+  if (raw.startsWith("/learn ")) {
+    const content = raw.replace("/learn ", "");
     const parts = content.split("|");
 
     if (parts.length !== 2) {
-      return "❌ Format : /learn question | réponse";
+      return "❌ Format : /learn question1, question2 | réponse1, réponse2";
     }
 
-    const q = cleanText(parts[0]); // ❌ ponctuation + minuscules
-    const a = parts[1].trim();     // ✅ réponse intacte
+    const questions = parts[0]
+      .split(",")
+      .map(q => cleanText(q))
+      .filter(Boolean);
 
-    await fetch(`${API_URL}/learn`, {
+    const answers = parts[1]
+      .split(",")
+      .map(a => a.trim())
+      .filter(Boolean);
+
+    if (!questions.length || !answers.length) {
+      return "❌ Question ou réponse invalide.";
+    }
+
+    await fetch(API_URL + "/learn", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q, a })
+      body: JSON.stringify({ q: questions, a: answers })
     });
 
     await loadMemory();
-    return "🧠 J’ai appris quelque chose de nouveau !";
+    return "🧠 C’est appris ! Merci 🙌";
   }
 
-  // 🔍 Recherche
+  // 🔍 RECHERCHE
   for (let item of memory) {
     for (let key of item.q) {
       if (msg.includes(cleanText(key))) {
-        return item.a; // ✅ ponctuation conservée
+        return randomItem(item.a);
       }
     }
   }
 
-  return [
-    "🤔 Je ne sais pas encore.",
-    "Tu peux m’apprendre avec /learn",
-    "Je n’ai pas encore appris ça.",
-    "Explique-moi 🙂"
-  ][Math.floor(Math.random() * 4)];
+  // ❓ RÉPONSE PAR DÉFAUT
+  return randomItem([
+    "🤔 Intéressant...",
+    "Je ne suis pas sûr de comprendre.",
+    "Peux-tu reformuler ?",
+    "Je n’ai pas encore appris ça."
+  ]);
 }
 
-/**********************
- * 💬 UI
- **********************/
-function addMessage(text, sender) {
-  const chat = document.getElementById("chat");
-  const msg = document.createElement("div");
-  msg.className = `message ${sender}`;
-  msg.innerHTML = text;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
+/*********************************
+ * 💬 INTERFACE
+ *********************************/
+function addMessage(text, who) {
+  const div = document.createElement("div");
+  div.className = who;
+  div.textContent = text;
+  document.getElementById("chat").appendChild(div);
 }
 
 async function sendMessage() {
