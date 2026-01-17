@@ -132,94 +132,11 @@
   </div>
 </div>
 
-<script>
-const API_URL = "https://nexa-79z3.onrender.com";
-
-let memory = [];
-
-/**********************
- * 🌐 Charger mémoire globale
- **********************/
-async function loadMemory() {
-  const res = await fetch(`${API_URL}/memory`);
-  memory = await res.json();
-}
-loadMemory();
-
-/**********************
- * 🧠 LOGIQUE IA (INSENSIBLE AUX MAJUSCULES)
- **********************/
-async function nexaAI(message) {
-  const msg = message.toLowerCase(); // 🔥 clé principale
-
-  // 📘 Apprentissage
-  if (msg.startsWith("/learn ")) {
-    const parts = message.substring(7).split("|");
-    if (parts.length !== 2) {
-      return "❌ Format : /learn question | réponse";
-    }
-
-    const q = parts[0].trim().toLowerCase(); // 🔥 stocké en minuscules
-    const a = parts[1].trim();
-
-    await fetch(`${API_URL}/learn`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q, a })
-    });
-
-    await loadMemory();
-    return "🧠 J’ai appris quelque chose de nouveau !";
-  }
-
-  // 🔍 Recherche insensible à la casse
-  for (let item of memory) {
-    for (let key of item.q) {
-      if (msg.includes(key.toLowerCase())) {
-        return item.a;
-      }
-    }
-  }
-
-  return [
-    "🤔 Je ne sais pas encore.",
-    "Apprends-moi avec /learn",
-    "Je n’ai pas encore appris ça.",
-    "Explique-moi 🙂"
-  ][Math.floor(Math.random() * 4)];
-}
-
-/**********************
- * 💬 UI
- **********************/
-function addMessage(text, sender) {
-  const chat = document.getElementById("chat");
-  const msg = document.createElement("div");
-  msg.className = `message ${sender}`;
-  msg.innerHTML = text;
-  chat.appendChild(msg);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-async function sendMessage() {
-  const input = document.getElementById("userInput");
-  const text = input.value.trim();
-  if (!text) return;
-
-  addMessage(text, "user");
-  input.value = "";
-
-  const response = await nexaAI(text);
-  addMessage(response, "ai");
-}
-
-document.getElementById("userInput").addEventListener("keydown", e => {
-  if (e.key === "Enter") sendMessage();
-});
-</script>
+<script src="main.js"></script>
 
 
 </body>
 </html>
+
 
 
