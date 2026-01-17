@@ -133,55 +133,60 @@
 </div>
 
 <script>
-/**********************
- * 🧠 MÉMOIRE IA
- **********************/
-let memory = JSON.parse(localStorage.getItem("nexa_memory")) || [
-  { q: ["bonjour", "salut"], a: "Salut 👋" },
-  { q: ["qui es-tu", "c'est quoi nexa"], a: "Je suis NEXA, une IA en JavaScript 🧠" },
-  { q: ["comment tu marches"], a: "Je fonctionne avec des règles et de la mémoire locale." }
-];
+const API_URL = "https://nexa-79z3.onrender.com";
+
+let memory = [];
 
 /**********************
- * 🔍 LOGIQUE IA
+ * 🌐 Charger mémoire globale
  **********************/
-function nexaAI(message) {
-  const msg = message.toLowerCase();
+async function loadMemory() {
+  const res = await fetch(`${API_URL}/memory`);
+  memory = await res.json();
+}
+loadMemory();
 
-  // Apprentissage
+/**********************
+ * 🧠 LOGIQUE IA (INSENSIBLE AUX MAJUSCULES)
+ **********************/
+async function nexaAI(message) {
+  const msg = message.toLowerCase(); // 🔥 clé principale
+
+  // 📘 Apprentissage
   if (msg.startsWith("/learn ")) {
-    const parts = message.replace("/learn ", "").split("|");
+    const parts = message.substring(7).split("|");
     if (parts.length !== 2) {
       return "❌ Format : /learn question | réponse";
     }
 
-    const q = parts[0].trim().toLowerCase();
+    const q = parts[0].trim().toLowerCase(); // 🔥 stocké en minuscules
     const a = parts[1].trim();
 
-    memory.push({ q: [q], a });
-    localStorage.setItem("nexa_memory", JSON.stringify(memory));
+    await fetch(`${API_URL}/learn`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q, a })
+    });
 
-    return "🧠 J'ai appris quelque chose de nouveau.";
+    await loadMemory();
+    return "🧠 J’ai appris quelque chose de nouveau (sans tenir compte des majuscules) !";
   }
 
-  // Recherche dans la mémoire
+  // 🔍 Recherche insensible à la casse
   for (let item of memory) {
     for (let key of item.q) {
-      if (msg.includes(key)) {
+      if (msg.includes(key.toLowerCase())) {
         return item.a;
       }
     }
   }
 
-  // Réponses génériques
-  const fallback = [
-    "🤔 Intéressant...",
-    "Je ne suis pas sûr de comprendre.",
-    "Peux-tu reformuler ?",
-    "Je n’ai pas encore appris ça."
-  ];
-
-  return fallback[Math.floor(Math.random() * fallback.length)];
+  return [
+    "🤔 Je ne sais pas encore.",
+    "Apprends-moi avec /learn",
+    "Je n’ai pas encore appris ça.",
+    "Explique-moi 🙂"
+  ][Math.floor(Math.random() * 4)];
 }
 
 /**********************
@@ -196,7 +201,7 @@ function addMessage(text, sender) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById("userInput");
   const text = input.value.trim();
   if (!text) return;
@@ -204,17 +209,16 @@ function sendMessage() {
   addMessage(text, "user");
   input.value = "";
 
-  setTimeout(() => {
-    const response = nexaAI(text);
-    addMessage(response, "ai");
-  }, 400);
+  const response = await nexaAI(text);
+  addMessage(response, "ai");
 }
 
-// Entrée avec ENTER
 document.getElementById("userInput").addEventListener("keydown", e => {
   if (e.key === "Enter") sendMessage();
 });
 </script>
 
+
 </body>
 </html>
+
