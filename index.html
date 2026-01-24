@@ -1,3 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="nexa.ico" type="image/x-icon">
+  <title>NEXA</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .app {
+      background: #111;
+      width: 100%;
+      max-width: 900px;
+      height: 90vh;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    .header {
+      padding: 16px 24px;
+      background: #1f2933;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 1.2rem;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: #4ade80;
+    }
+
+    .chat {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      background: #0b1220;
+    }
+
+    .message {
+      margin-bottom: 16px;
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #2563eb;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+
+    .ai {
+      background: #1f2937;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 16px;
+      background: #020617;
+      gap: 12px;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    .input-area button {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #22c55e;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .input-area button:hover {
+      background: #16a34a;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>🤖 NEXA</h1>
+    <span class="status">● En ligne</span>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="message ai">
+      Bonjour 👋 Je suis <strong>NEXA</strong>.
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input id="userInput" type="text" placeholder="Parle à NEXA..." />
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+</div>
 <script>
   const chat = document.getElementById("chat");
   const input = document.getElementById("userInput");
@@ -52,3 +184,7 @@
     if (e.key === "Enter") sendMessage();
   });
 </script>
+
+
+</body>
+</html>
